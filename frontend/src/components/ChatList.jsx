@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { chatAPI } from '../services/api';
 import socketService from '../services/socket';
+import toast from 'react-hot-toast';
 
 const ChatList = () => {
   const navigate = useNavigate();
@@ -22,10 +23,16 @@ const ChatList = () => {
   const { 
     data: chatsData, 
     isLoading: chatsLoading,
-    error: chatsError 
+    error: chatsError,
+    refetch: refetchChats 
   } = useQuery('chats', () => chatAPI.getChats(), {
     refetchOnWindowFocus: false,
-    staleTime: 30000
+    staleTime: 30000,
+    retry: 1,
+    onError: (error) => {
+      console.error('Ошибка загрузки чатов:', error);
+      toast.error('Не удалось загрузить чаты');
+    }
   });
 
   useEffect(() => {
@@ -136,8 +143,14 @@ const ChatList = () => {
         <div className="p-4 border-b">
           <h1 className="text-xl font-bold text-gray-900">Чаты</h1>
         </div>
-        <div className="p-4 text-center text-red-500">
-          Ошибка загрузки чатов
+        <div className="p-4 text-center">
+          <div className="text-red-500 mb-2">Ошибка загрузки чатов</div>
+          <button
+            onClick={() => refetchChats()}
+            className="text-blue-500 hover:text-blue-600"
+          >
+            Повторить попытку
+          </button>
         </div>
       </div>
     );
