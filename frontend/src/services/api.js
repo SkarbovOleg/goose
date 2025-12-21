@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// Используем переменные окружения для production, localhost для development
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
@@ -33,7 +34,10 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
     
-    // Можно добавить обработку других ошибок
+    // Показываем сообщение об ошибке
+    const message = error.response?.data?.message || 'Произошла ошибка';
+    console.error('API Error:', message);
+    
     return Promise.reject(error);
   }
 );
@@ -50,14 +54,21 @@ export const authAPI = {
   
   getProfile: () => api.get('/api/auth/profile'),
   
-  updateProfile: (data) => api.put('/api/auth/profile', data)
+  updateProfile: (data) => api.put('/api/auth/profile', data),
+  
+  updateStatus: (status) => api.put('/api/auth/status', { status }),
+  
+  searchUsers: (query) => 
+    api.get(`/api/auth/users/search?q=${encodeURIComponent(query)}`),
+  
+  changePassword: (currentPassword, newPassword) => 
+    api.put('/api/auth/change-password', { currentPassword, newPassword })
 };
 
 // API для чатов
 export const chatAPI = {
+  // Чаты
   getChats: () => api.get('/api/chats'),
-  
-  getChat: (chatId) => api.get(`/api/chats/${chatId}`),
   
   createPrivateChat: (userId) => 
     api.post('/api/chats/private', { userId }),
@@ -65,14 +76,30 @@ export const chatAPI = {
   createGroupChat: (name, avatar_url, userIds) => 
     api.post('/api/chats/group', { name, avatar_url, userIds }),
   
-  getMessages: (chatId, limit = 50, offset = 0) => 
-    api.get(`/api/chats/${chatId}/messages?limit=${limit}&offset=${offset}`),
+  getChat: (chatId) => api.get(`/api/chats/${chatId}`),
   
-  sendMessage: (chatId, content, messageType = 'text', metadata = {}) => 
+  updateChat: (chatId, updates) => 
+    api.put(`/api/chats/${chatId}`, updates),
+  
+  searchChats: (query) => 
+    api.get(`/api/chats/search?q=${encodeURIComponent(query)}`),
+  
+  // Сообщения
+  getMessages: (chatId, limit = 50, offset = 0, before = null) => {
+    const params = new URLSearchParams();
+    params.append('limit', limit);
+    params.append('offset', offset);
+    if (before) params.append('before', before);
+    
+    return api.get(`/api/chats/${chatId}/messages?${params}`);
+  },
+  
+  sendMessage: (chatId, content, messageType = 'text', metadata = {}, replyTo = null) => 
     api.post(`/api/chats/${chatId}/messages`, { 
       content, 
       message_type: messageType, 
-      metadata 
+      metadata, 
+      reply_to: replyTo 
     }),
   
   editMessage: (messageId, content, metadata = {}) => 
@@ -81,27 +108,11 @@ export const chatAPI = {
   deleteMessage: (messageId) => 
     api.delete(`/api/messages/${messageId}`),
   
-  searchChats: (query) => 
-    api.get(`/api/chats/search?q=${query}`)
-};
-
-// API для пользователей
-export const userAPI = {
-  searchUsers: (query) => 
-    api.get(`/api/users/search?q=${query}`),
+  markAsRead: (messageIds) => 
+    api.post('/api/messages/mark-read', { messageIds }),
   
-  getUser: (userId) => api.get(`/api/users/${userId}`),
-  
-  updateAvatar: (file) => {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    
-    return api.post('/api/users/avatar', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-  }
+  searchMessages: (chatId, query) => 
+    api.get(`/api/chats/${chatId}/messages/search?q=${encodeURIComponent(query)}`)
 };
 
 export default api;
