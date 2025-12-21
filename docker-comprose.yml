@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: goose-postgres
+    environment:
+      POSTGRES_USER: goose_user
+      POSTGRES_PASSWORD: goose_password
+      POSTGRES_DB: goose_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - goose-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goose_user -d goose_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: goose-backend
+    ports:
+      - "5000:5000"
+    environment:
+      # Настройки базы данных
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: goose_user
+      DB_PASSWORD: goose_password
+      DB_NAME: goose_db
+      
+      # JWT настройки
+      JWT_SECRET: your_super_secret_jwt_key_change_this_in_production
+      JWT_EXPIRES_IN: 7d
+      
+      # Окружение
+      NODE_ENV: development
+      FRONTEND_URL: http://localhost:3000
+      API_URL: http://localhost:5000
+      
+      # Настройки приложения
+      MAX_FILE_SIZE: 10485760
+      UPLOAD_PATH: ./uploads
+      
+      # Настройки сокета
+      SOCKET_PING_TIMEOUT: 60000
+      SOCKET_PING_INTERVAL: 25000
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - goose-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend приложение
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: goose-frontend
+    ports:
+      - "3000:80"
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      REACT_APP_SOCKET_URL: http://localhost:5000
+      REACT_APP_ENV: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - goose-network
+    restart: unless-stopped
+
+  # Nginx для проксирования (опционально)
+  nginx:
+    image: nginx:alpine
+    container_name: goose-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - goose-network
+    restart: unless-stopped
+
+  # Redis для кэширования (опционально)
+  redis:
+    image: redis:7-alpine
+    container_name: goose-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - goose-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  goose-network:
+    driver: bridge
