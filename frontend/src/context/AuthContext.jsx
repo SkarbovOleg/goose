@@ -1,8 +1,9 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
+import socketService from '../services/socket';
 
 const AuthContext = createContext(null);
 
@@ -24,12 +25,14 @@ export const AuthProvider = ({ children }) => {
     const initAuth = async () => {
       if (token) {
         try {
+          // Проверяем срок действия токена
           const decoded = jwtDecode(token);
           if (decoded.exp * 1000 < Date.now()) {
             logout();
             return;
           }
 
+          // Получаем профиль пользователя
           await fetchProfile();
         } catch (error) {
           console.error('Auth initialization error:', error);
@@ -42,10 +45,21 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
+  useEffect(() => {
+    if (token && user) {
+      // Подключаем WebSocket
+      socketService.connect(token);
+    } else if (!token) {
+      // Отключаем WebSocket
+      socketService.disconnect();
+    }
+  }, [token, user]);
+
   const fetchProfile = async () => {
     try {
       const response = await authAPI.getProfile();
       setUser(response.data.data.user);
+      toast.success('Добро пожаловать!');
     } catch (error) {
       console.error('Profile fetch error:', error);
       logout();
@@ -54,6 +68,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      setLoading(true);
       const response = await authAPI.login(email, password);
       const { data } = response.data;
       
@@ -61,15 +76,20 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       setUser(data.user);
       
+      toast.success('Вход выполнен успешно!');
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Ошибка входа';
+      toast.error(message);
       return { success: false, error: message };
+    } finally {
+      setLoading(false);
     }
   };
 
   const register = async (username, email, password) => {
     try {
+      setLoading(true);
       const response = await authAPI.register(username, email, password);
       const { data } = response.data;
       
@@ -77,10 +97,14 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       setUser(data.user);
       
+      toast.success('Регистрация успешна!');
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Ошибка регистрации';
+      toast.error(message);
       return { success: false, error: message };
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,6 +120,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUser(null);
       navigate('/login');
+      toast.success('Вы вышли из системы');
     }
   };
 
@@ -103,10 +128,23 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.updateProfile(updates);
       setUser(response.data.data.user);
+      toast.success('Профиль обновлен');
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Ошибка обновления профиля';
+      toast.error(message);
       return { success: false, error: message };
+    }
+  };
+
+  const updateStatus = async (status) => {
+    try {
+      const response = await authAPI.updateStatus(status);
+      setUser(prev => ({ ...prev, status: response.data.data.user.status }));
+      return { success: true };
+    } catch (error) {
+      console.error('Status update error:', error);
+      return { success: false };
     }
   };
 
@@ -117,7 +155,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    updateProfile
+    updateProfile,
+    updateStatus
   };
 
   return (
