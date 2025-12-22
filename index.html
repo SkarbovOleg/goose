@@ -882,13 +882,15 @@
                 totalUpgradesLimit += upgrade.limit;
                 totalUpgradesLeft += (upgrade.limit - upgrade.bought);
                 
-                // Проверяем лимит
+                // Проверяем лимит для ЭТОГО конкретного улучшения
                 if (upgrade.bought >= upgrade.limit) {
+                    // Достигнут лимит для этого улучшения
                     btn.disabled = true;
                     btn.classList.add('limit-reached');
                     btn.innerHTML = `Улучшение ${i}<br><small>Лимит достигнут!</small><br><small>Куплено: ${upgrade.bought}/${upgrade.limit}</small>`;
                 } else {
-                    // Проверяем, хватает ли денег
+                    // Лимит НЕ достигнут для этого улучшения
+                    // Проверяем, хватает ли денег ТОЛЬКО ДЛЯ ЭТОГО улучшения
                     btn.disabled = clickCount < currentCost;
                     
                     // Обновляем классы
@@ -950,7 +952,7 @@
             const upgrade = upgrades[upgradeId];
             const btn = document.getElementById(`upgrade-${upgradeId}`);
             
-            // Проверяем лимит
+            // Проверяем лимит для ЭТОГО конкретного улучшения
             if (upgrade.bought >= upgrade.limit) {
                 alert('Достигнут лимит покупок этого улучшения! Максимум 20 раз.');
                 return;
