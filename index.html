@@ -245,6 +245,8 @@
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            min-width: 120px;
+            position: relative;
         }
         
         .upgrade-btn:hover {
@@ -258,17 +260,71 @@
             transform: none;
         }
         
+        .upgrade-btn.limit-reached {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+        
+        .upgrade-btn.limit-reached:hover {
+            background: linear-gradient(135deg, #ff5252, #e53935);
+        }
+        
+        .upgrade-progress {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .upgrade-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4cd964, #5ac8fa);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
         .clicker-info {
             width: 100%;
             margin-top: 20px;
             font-size: 1.1rem;
             line-height: 1.6;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
         }
         
         .clicker-info div {
             margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
+        }
+        
+        .clicker-info span:first-child {
+            color: #a0a0ff;
+        }
+        
+        .upgrade-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .upgrade-stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .upgrade-stat span {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4cd964;
+            display: block;
+            margin-top: 5px;
         }
         
         footer {
@@ -291,6 +347,10 @@
                 width: 100%;
                 max-width: 500px;
             }
+            
+            .upgrade-stats {
+                grid-template-columns: 1fr;
+            }
         }
         
         @media (max-width: 600px) {
@@ -308,6 +368,15 @@
             .clicker-button {
                 width: 150px;
                 height: 150px;
+            }
+            
+            .upgrades {
+                gap: 10px;
+            }
+            
+            .upgrade-btn {
+                padding: 10px 15px;
+                min-width: 110px;
             }
         }
     </style>
@@ -355,7 +424,7 @@
         
         <!-- Игра Кликер -->
         <section id="clicker-game" class="game-section" style="display: none;">
-            <h2 class="game-title">Кликер</h2>
+            <h2 class="game-title">Кликер с лимитами улучшений</h2>
             
             <div class="clicker-counter" id="click-count">0</div>
             
@@ -365,29 +434,56 @@
             </button>
             
             <div class="upgrades">
-                <button class="upgrade-btn" id="upgrade-1" data-cost="10" data-power="1">
+                <button class="upgrade-btn" id="upgrade-1" data-cost="10" data-power="1" data-limit="20">
                     Улучшение 1<br>
                     <small>+1 за клик</small><br>
-                    <small>Цена: 10</small>
+                    <small>Цена: <span class="upgrade-cost">10</span></small><br>
+                    <small>Куплено: <span class="upgrade-bought">0</span>/20</small>
+                    <div class="upgrade-progress">
+                        <div class="upgrade-progress-bar" id="progress-1"></div>
+                    </div>
                 </button>
                 
-                <button class="upgrade-btn" id="upgrade-2" data-cost="100" data-power="5">
+                <button class="upgrade-btn" id="upgrade-2" data-cost="100" data-power="5" data-limit="20">
                     Улучшение 2<br>
                     <small>+5 за клик</small><br>
-                    <small>Цена: 100</small>
+                    <small>Цена: <span class="upgrade-cost">100</span></small><br>
+                    <small>Куплено: <span class="upgrade-bought">0</span>/20</small>
+                    <div class="upgrade-progress">
+                        <div class="upgrade-progress-bar" id="progress-2"></div>
+                    </div>
                 </button>
                 
-                <button class="upgrade-btn" id="upgrade-3" data-cost="500" data-power="20">
+                <button class="upgrade-btn" id="upgrade-3" data-cost="500" data-power="20" data-limit="20">
                     Улучшение 3<br>
                     <small>+20 за клик</small><br>
-                    <small>Цена: 500</small>
+                    <small>Цена: <span class="upgrade-cost">500</span></small><br>
+                    <small>Куплено: <span class="upgrade-bought">0</span>/20</small>
+                    <div class="upgrade-progress">
+                        <div class="upgrade-progress-bar" id="progress-3"></div>
+                    </div>
                 </button>
                 
-                <button class="upgrade-btn" id="upgrade-4" data-cost="2000" data-power="100">
+                <button class="upgrade-btn" id="upgrade-4" data-cost="2000" data-power="100" data-limit="20">
                     Улучшение 4<br>
                     <small>+100 за клик</small><br>
-                    <small>Цена: 2000</small>
+                    <small>Цена: <span class="upgrade-cost">2000</span></small><br>
+                    <small>Куплено: <span class="upgrade-bought">0</span>/20</small>
+                    <div class="upgrade-progress">
+                        <div class="upgrade-progress-bar" id="progress-4"></div>
+                    </div>
                 </button>
+            </div>
+            
+            <div class="upgrade-stats">
+                <div class="upgrade-stat">
+                    Всего можно купить улучшений:<br>
+                    <span id="total-upgrades-limit">80</span>
+                </div>
+                <div class="upgrade-stat">
+                    Осталось улучшений:<br>
+                    <span id="upgrades-left">80</span>
+                </div>
             </div>
             
             <div class="clicker-info">
@@ -726,6 +822,14 @@
         let cps = parseInt(localStorage.getItem('cps')) || 0;
         let autoClickerInterval;
         
+        // Данные об улучшениях - теперь у всех лимит 20
+        let upgrades = {
+            1: { bought: parseInt(localStorage.getItem('upgrade1Bought')) || 0, limit: 20 },
+            2: { bought: parseInt(localStorage.getItem('upgrade2Bought')) || 0, limit: 20 },
+            3: { bought: parseInt(localStorage.getItem('upgrade3Bought')) || 0, limit: 20 },
+            4: { bought: parseInt(localStorage.getItem('upgrade4Bought')) || 0, limit: 20 }
+        };
+        
         // Обновление отображения
         function updateClickerDisplay() {
             document.getElementById('click-count').textContent = formatNumber(clickCount);
@@ -735,12 +839,8 @@
             document.getElementById('upgrades-bought').textContent = upgradesBought;
             document.getElementById('cps').textContent = cps;
             
-            // Обновление состояния кнопок улучшений
-            const upgradeButtons = document.querySelectorAll('.upgrade-btn');
-            upgradeButtons.forEach(btn => {
-                const cost = parseInt(btn.getAttribute('data-cost'));
-                btn.disabled = clickCount < cost;
-            });
+            // Обновление улучшений
+            updateUpgradesDisplay();
             
             // Сохранение прогресса
             localStorage.setItem('clickerCount', clickCount);
@@ -748,6 +848,66 @@
             localStorage.setItem('powerPerClick', powerPerClick);
             localStorage.setItem('upgradesBought', upgradesBought);
             localStorage.setItem('cps', cps);
+            localStorage.setItem('upgrade1Bought', upgrades[1].bought);
+            localStorage.setItem('upgrade2Bought', upgrades[2].bought);
+            localStorage.setItem('upgrade3Bought', upgrades[3].bought);
+            localStorage.setItem('upgrade4Bought', upgrades[4].bought);
+        }
+        
+        function updateUpgradesDisplay() {
+            let totalUpgradesLeft = 0;
+            let totalUpgradesLimit = 0;
+            
+            for (let i = 1; i <= 4; i++) {
+                const upgrade = upgrades[i];
+                const btn = document.getElementById(`upgrade-${i}`);
+                const costElement = btn.querySelector('.upgrade-cost');
+                const boughtElement = btn.querySelector('.upgrade-bought');
+                const progressBar = document.getElementById(`progress-${i}`);
+                
+                // Обновляем текст
+                boughtElement.textContent = upgrade.bought;
+                
+                // Обновляем прогресс-бар
+                const progressPercent = (upgrade.bought / upgrade.limit) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+                
+                // Рассчитываем текущую стоимость (увеличивается с каждой покупкой)
+                const baseCost = parseInt(btn.getAttribute('data-cost'));
+                const currentCost = Math.floor(baseCost * Math.pow(1.15, upgrade.bought));
+                costElement.textContent = currentCost;
+                btn.setAttribute('data-current-cost', currentCost);
+                
+                // Считаем общие лимиты
+                totalUpgradesLimit += upgrade.limit;
+                totalUpgradesLeft += (upgrade.limit - upgrade.bought);
+                
+                // Проверяем лимит
+                if (upgrade.bought >= upgrade.limit) {
+                    btn.disabled = true;
+                    btn.classList.add('limit-reached');
+                    btn.innerHTML = `Улучшение ${i}<br><small>Лимит достигнут!</small><br><small>Куплено: ${upgrade.bought}/${upgrade.limit}</small>`;
+                } else {
+                    // Проверяем, хватает ли денег
+                    btn.disabled = clickCount < currentCost;
+                    
+                    // Обновляем классы
+                    btn.classList.remove('limit-reached');
+                    
+                    // Обновляем текст кнопки
+                    btn.innerHTML = `Улучшение ${i}<br>
+                        <small>+${btn.getAttribute('data-power')} за клик</small><br>
+                        <small>Цена: <span class="upgrade-cost">${currentCost}</span></small><br>
+                        <small>Куплено: <span class="upgrade-bought">${upgrade.bought}</span>/${upgrade.limit}</small>
+                        <div class="upgrade-progress">
+                            <div class="upgrade-progress-bar" id="progress-${i}"></div>
+                        </div>`;
+                }
+            }
+            
+            // Обновляем информацию об оставшихся улучшениях
+            document.getElementById('upgrades-left').textContent = totalUpgradesLeft;
+            document.getElementById('total-upgrades-limit').textContent = totalUpgradesLimit;
         }
         
         function formatNumber(num) {
@@ -785,60 +945,53 @@
             }, 1000);
         }
         
-        // Обработчики улучшений
-        document.getElementById('upgrade-1').addEventListener('click', function() {
-            const cost = parseInt(this.getAttribute('data-cost'));
-            const power = parseInt(this.getAttribute('data-power'));
+        // Функция покупки улучшения
+        function buyUpgrade(upgradeId) {
+            const upgrade = upgrades[upgradeId];
+            const btn = document.getElementById(`upgrade-${upgradeId}`);
             
-            if (clickCount >= cost) {
-                clickCount -= cost;
-                powerPerClick += power;
-                upgradesBought++;
-                updateClickerDisplay();
+            // Проверяем лимит
+            if (upgrade.bought >= upgrade.limit) {
+                alert('Достигнут лимит покупок этого улучшения! Максимум 20 раз.');
+                return;
             }
-        });
-        
-        document.getElementById('upgrade-2').addEventListener('click', function() {
-            const cost = parseInt(this.getAttribute('data-cost'));
-            const power = parseInt(this.getAttribute('data-power'));
             
-            if (clickCount >= cost) {
-                clickCount -= cost;
-                powerPerClick += power;
-                upgradesBought++;
-                updateClickerDisplay();
-            }
-        });
-        
-        document.getElementById('upgrade-3').addEventListener('click', function() {
-            const cost = parseInt(this.getAttribute('data-cost'));
-            const power = parseInt(this.getAttribute('data-power'));
+            const currentCost = parseInt(btn.getAttribute('data-current-cost'));
+            const power = parseInt(btn.getAttribute('data-power'));
             
-            if (clickCount >= cost) {
-                clickCount -= cost;
-                powerPerClick += power;
+            if (clickCount >= currentCost) {
+                clickCount -= currentCost;
+                upgrade.bought++;
                 upgradesBought++;
-                updateClickerDisplay();
-            }
-        });
-        
-        document.getElementById('upgrade-4').addEventListener('click', function() {
-            const cost = parseInt(this.getAttribute('data-cost'));
-            const power = parseInt(this.getAttribute('data-power'));
-            
-            if (clickCount >= cost) {
-                clickCount -= cost;
                 powerPerClick += power;
-                upgradesBought++;
                 
-                // Добавляем автокликер при покупке 4 улучшения
-                if (cps === 0) {
-                    cps = 5;
+                // Для 4-го улучшения добавляем автокликер
+                if (upgradeId === 4 && cps === 0) {
+                    cps = 10; // Увеличиваем CPS для баланса
                     startAutoClicker();
                 }
                 
                 updateClickerDisplay();
+            } else {
+                alert(`Недостаточно кликов! Нужно еще ${currentCost - clickCount} кликов.`);
             }
+        }
+        
+        // Обработчики улучшений
+        document.getElementById('upgrade-1').addEventListener('click', function() {
+            buyUpgrade(1);
+        });
+        
+        document.getElementById('upgrade-2').addEventListener('click', function() {
+            buyUpgrade(2);
+        });
+        
+        document.getElementById('upgrade-3').addEventListener('click', function() {
+            buyUpgrade(3);
+        });
+        
+        document.getElementById('upgrade-4').addEventListener('click', function() {
+            buyUpgrade(4);
         });
         
         // Сброс прогресса
@@ -849,6 +1002,14 @@
                 powerPerClick = 1;
                 upgradesBought = 0;
                 cps = 0;
+                
+                // Сбрасываем улучшения
+                upgrades = {
+                    1: { bought: 0, limit: 20 },
+                    2: { bought: 0, limit: 20 },
+                    3: { bought: 0, limit: 20 },
+                    4: { bought: 0, limit: 20 }
+                };
                 
                 clearInterval(autoClickerInterval);
                 updateClickerDisplay();
