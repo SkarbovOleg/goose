@@ -866,16 +866,16 @@
                 const progressBar = document.getElementById(`progress-${i}`);
                 
                 // Обновляем текст
-                if (boughtElement) boughtElement.textContent = upgrade.bought;
+                boughtElement.textContent = upgrade.bought;
                 
                 // Обновляем прогресс-бар
                 const progressPercent = (upgrade.bought / upgrade.limit) * 100;
-                if (progressBar) progressBar.style.width = `${progressPercent}%`;
+                progressBar.style.width = `${progressPercent}%`;
                 
                 // Рассчитываем текущую стоимость (увеличивается с каждой покупкой)
                 const baseCost = parseInt(btn.getAttribute('data-cost'));
                 const currentCost = Math.floor(baseCost * Math.pow(1.15, upgrade.bought));
-                if (costElement) costElement.textContent = currentCost;
+                costElement.textContent = currentCost;
                 btn.setAttribute('data-current-cost', currentCost);
                 
                 // Считаем общие лимиты
@@ -887,16 +887,7 @@
                     // Достигнут лимит для этого улучшения
                     btn.disabled = true;
                     btn.classList.add('limit-reached');
-                    
-                    // Сохраняем обработчик события даже при обновлении текста
-                    const oldHTML = btn.innerHTML;
                     btn.innerHTML = `Улучшение ${i}<br><small>Лимит достигнут!</small><br><small>Куплено: ${upgrade.bought}/${upgrade.limit}</small>`;
-                    
-                    // Восстанавливаем прогресс-бар
-                    const progressDiv = document.createElement('div');
-                    progressDiv.className = 'upgrade-progress';
-                    progressDiv.innerHTML = `<div class="upgrade-progress-bar" id="progress-${i}" style="width: ${progressPercent}%"></div>`;
-                    btn.appendChild(progressDiv);
                 } else {
                     // Лимит НЕ достигнут для этого улучшения
                     // Проверяем, хватает ли денег ТОЛЬКО ДЛЯ ЭТОГО улучшения
@@ -905,18 +896,14 @@
                     // Обновляем классы
                     btn.classList.remove('limit-reached');
                     
-                    // Обновляем только нужные элементы, не перезаписывая всю кнопку
-                    if (costElement) costElement.textContent = currentCost;
-                    if (boughtElement) boughtElement.textContent = upgrade.bought;
-                    if (progressBar) progressBar.style.width = `${progressPercent}%`;
-                    
-                    // Обновляем содержимое маленьких тегов
-                    const smallTags = btn.querySelectorAll('small');
-                    if (smallTags.length >= 3) {
-                        smallTags[0].textContent = `+${btn.getAttribute('data-power')} за клик`;
-                        smallTags[1].textContent = `Цена: ${currentCost}`;
-                        smallTags[2].textContent = `Куплено: ${upgrade.bought}/${upgrade.limit}`;
-                    }
+                    // Обновляем текст кнопки
+                    btn.innerHTML = `Улучшение ${i}<br>
+                        <small>+${btn.getAttribute('data-power')} за клик</small><br>
+                        <small>Цена: <span class="upgrade-cost">${currentCost}</span></small><br>
+                        <small>Куплено: <span class="upgrade-bought">${upgrade.bought}</span>/${upgrade.limit}</small>
+                        <div class="upgrade-progress">
+                            <div class="upgrade-progress-bar" id="progress-${i}"></div>
+                        </div>`;
                 }
             }
             
